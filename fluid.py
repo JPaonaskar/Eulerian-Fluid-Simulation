@@ -2,12 +2,14 @@
 FLUID
 by Josha Paonaskar
 
-Manages fluid prperties and time step
+Manages fluid properties and motion
 '''
 import numpy as np
 import matplotlib.pyplot as plt
 
 from typing import Union
+
+import utils
 
 # walls
 BOUNDS_N = 'n'
@@ -189,11 +191,98 @@ class Fluid():
             # update south velocity
             self.v[:-1, :] += d * self.s[:-2, 1:-1]
 
+    def average_v(self) -> np.ndarray:
+        '''
+        Get average v values for u
+
+        Returns:
+        --------
+        np.ndarray
+            average v values
+        '''
+        # copy v
+        v = self.v.copy()
+
+        # pad v
+        pad_left = np.expand_dims(v[:, 0], axis=1)
+        pad_right = np.expand_dims(v[:, -1], axis=1)
+        v = np.hstack([pad_left, v, pad_right])
+
+        # average values
+        v = 0.25 * (v[:-1, :-1] + v[1:, :-1] + v[:-1, 1:] + v[1:, 1:])
+
+        # return
+        return v
+
+    def average_u(self) -> np.ndarray:
+        '''
+        Get average u values for v
+
+        Returns:
+        --------
+        np.ndarray
+            average u values
+        '''
+        # copy v
+        u = self.u.copy()
+
+        # pad v
+        pad_bottom = np.expand_dims(u[0, :], axis=0)
+        pad_top = np.expand_dims(u[-1, :], axis=0)
+        u = np.vstack([pad_bottom, u, pad_top])
+
+        # average values
+        u = 0.25 * (u[:-1, :-1] + u[1:, :-1] + u[:-1, 1:] + u[1:, 1:])
+
+        # return
+        return u
+
     def advection(self, dt:float):
         '''
         Move velocity field (Semi-Legrangian)
         '''
-        pass
+        # get averages
+        avg_v = self.average_v()
+        avg_u = self.average_u()
+
+        # create coordinates
+        ux, uy = np.meshgrid(np.arange(self.w + 1), np.arange(self.h))
+        vx, vy = np.meshgrid(np.arange(self.w), np.arange(self.h + 1))
+
+        # convert to types
+        ux = ux.astype(self.dtype)
+        uy = uy.astype(self.dtype)
+        vx = vx.astype(self.dtype)
+        vy = vy.astype(self.dtype)
+
+        # step
+        ux += self.u * dt
+        uy += avg_v * dt
+        
+        vx += avg_u * dt
+        vy += self.v * dt
+
+        # bound u
+        ux[ux < 0.0] = 0.0
+        uy[uy < 0.0] = 0.0
+
+        ux[ux > self.w] = self.w
+        uy[uy > self.h - 1] = self.h - 1
+
+        # bound v
+        vx[vx < 0.0] = 0.0
+        vy[vy < 0.0] = 0.0
+
+        vx[vx > self.w - 1] = self.w - 1
+        vy[vy > self.h] = self.h
+
+        # sample
+        u = utils.sample_2D_field(self.u, ux, uy)
+        v = utils.sample_2D_field(self.v, vx, vy)
+
+        # update velocity
+        self.u = u
+        self.v = v
 
     def plot_velocites(self):
         '''
@@ -216,13 +305,3 @@ class Fluid():
         plt.imshow(self.p, cmap='jet')
         plt.colorbar()
         plt.show()
-
-if __name__ == '__main__':
-    fluid = Fluid(50, 50)
-    dt = 0.05
-    for i in range(50):
-        fluid.gravity(dt)
-        fluid.walls()
-        fluid.incompressibility(dt, n=50)
-        fluid.advection(dt)
-    fluid.plot_pressure()
