@@ -61,6 +61,26 @@ class Fluid():
         # initilize pressure field
         self.p = np.zeros((height, width), dtype=dtype)
 
+    def circle(self, center:tuple[float], radius:float):
+        '''
+        Draw circle of walls
+
+        Parameters:
+        -----------
+        center : tuple[float]
+            circle center
+        radius : float
+            circle radius
+        '''
+        # create axes
+        x, y = np.meshgrid(np.arange(self.w), np.arange(self.h))
+
+        # circle equation for mask
+        mask = np.square(x - center[0]) + np.square(y - center[1]) < radius * radius
+
+        # apply mask
+        self.s[1:-1, 1:-1][mask] = False
+
     def gravity(self, dt:float, g:Union[tuple, list, np.ndarray]=(0, -9.81)):
         '''
         Apply gravity
@@ -236,10 +256,34 @@ class Fluid():
 
         # return
         return u
+    
+    def advection_for(self, dt:float):
+        '''
+        Move velocity field (Semi-Legrangian) using for loop
+
+        Parameters:
+        -----------
+        dt : float
+            timestep size
+        '''
+        for i in range(self.w + 1):
+            for j in range(self.h + 1):
+                # u component
+                if (self.s[i+1, j+1] and self.s[i, j+1] and j < self.h - 1):
+                    pass
+
+                # v component
+                if (self.s[i+1, j+1] and self.s[i+1, j] and i < self.w - 1):
+                    pass
 
     def advection(self, dt:float):
         '''
         Move velocity field (Semi-Legrangian)
+
+        Parameters:
+        -----------
+        dt : float
+            timestep size
         '''
         # get averages
         avg_v = self.average_v()

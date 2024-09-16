@@ -11,7 +11,8 @@ import numpy as np
 
 import fluid
 
-sim = fluid.Fluid(100, 100)
+sim = fluid.Fluid(50, 50)
+#sim.circle((20, 25), 5)
 dt = 0.01
 t = time.time()
 
@@ -19,12 +20,11 @@ while True:
     sim.gravity(dt)
     sim.walls()
     sim.incompressibility(dt, overrelax=1.0, n=50)
-    sim.advection(dt)
+    sim.advection_for(dt)
 
     # plot pressures
     p = sim.p.copy()
-    p = p - p.min()
-    p = p / p.max() * 255
+    p = p / np.abs(p).max() * 127.5 + 127.5
     p = p.astype(np.uint8)
 
     p = cv2.applyColorMap(p, cv2.COLORMAP_JET)
