@@ -12,7 +12,7 @@ import numpy as np
 import fluid
 
 sim = fluid.Fluid(50, 50)
-#sim.circle((20, 25), 5)
+sim.circle((15, 25), 5)
 dt = 0.01
 t = time.time()
 

@@ -196,6 +196,9 @@ class Fluid():
             # normalize divergence
             d = d / s * overrelax
 
+            # ignore solid cellss
+            d[~self.s[1:-1, 1:-1]] = 0
+
             # update pressure
             self.p += d * rho * ds / dt
 
