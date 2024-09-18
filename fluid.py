@@ -21,7 +21,7 @@ class Fluid():
     '''
     Fluid class
     '''
-    def __init__(self, width:int, height:int, boundries:str='nesw', dtype:type=np.float16):
+    def __init__(self, width:int, height:int, boundries:str='nesw', dtype:type=np.float32):
         '''
         Initialize Fluid
 
@@ -33,7 +33,7 @@ class Fluid():
             fluid height
         boundries : str = 'nesw'
             fluid boundries
-        dtype : type = np.float16
+        dtype : type = np.float32
             datatype to use
         '''
         # store shape
@@ -100,10 +100,10 @@ class Fluid():
         Apply boundry conditions at walls
         '''
         # apply east walls
-        self.u[:, 1:][~self.s[1:-1, 2:]] = 0.0
+        self.u[:, 1:][~self.s[1:-1, 2:]] = -2.0
 
         # apply west walls
-        self.u[:, :-1][~self.s[1:-1, :-2]] = 0.0
+        self.u[:, :-1][~self.s[1:-1, :-2]] = -2.0
 
         # apply north walls
         self.v[1:, :][~self.s[2:, 1:-1]] = 0.0
@@ -272,11 +272,19 @@ class Fluid():
         for i in range(self.w + 1):
             for j in range(self.h + 1):
                 # u component
-                if (self.s[i+1, j+1] and self.s[i, j+1] and j < self.h - 1):
-                    pass
+                if (self.s[i, j+1] and self.s[i+1, j+1] and j < self.h):
+                    # x, y in v space
+                    x = i - 0.5
+                    y = j + 0.5
+
+                    # get velocity at u
+                    u = self.u[i, j]
+                    v = utils.sample_2D_field(self.v, x, y)
+
+                    # advect
 
                 # v component
-                if (self.s[i+1, j+1] and self.s[i+1, j] and i < self.w - 1):
+                if (self.s[i+1, j+1] and self.s[i+1, j] and i < self.w):
                     pass
 
     def advection(self, dt:float):
@@ -303,25 +311,11 @@ class Fluid():
         vy = vy.astype(self.dtype)
 
         # step
-        ux += self.u * dt
-        uy += avg_v * dt
+        ux -= self.u * dt
+        uy -= avg_v * dt
         
-        vx += avg_u * dt
-        vy += self.v * dt
-
-        # bound u
-        ux[ux < 0.0] = 0.0
-        uy[uy < 0.0] = 0.0
-
-        ux[ux > self.w] = self.w
-        uy[uy > self.h - 1] = self.h - 1
-
-        # bound v
-        vx[vx < 0.0] = 0.0
-        vy[vy < 0.0] = 0.0
-
-        vx[vx > self.w - 1] = self.w - 1
-        vy[vy > self.h] = self.h
+        vx -= avg_u * dt
+        vy -= self.v * dt
 
         # sample
         u = utils.sample_2D_field(self.u, ux, uy)
@@ -352,3 +346,10 @@ class Fluid():
         plt.imshow(self.p, cmap='jet')
         plt.colorbar()
         plt.show()
+
+if __name__ == '__main__':
+    sim = Fluid(5, 5)
+    sim.gravity(0.1)
+    sim.walls()
+    sim.incompressibility(0.1)
+    sim.advection_for(0.1)

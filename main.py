@@ -11,16 +11,16 @@ import numpy as np
 
 import fluid
 
-sim = fluid.Fluid(50, 50)
-sim.circle((15, 25), 5)
+sim = fluid.Fluid(200, 200, boundries='nsw')
+sim.circle((70, 100), 20)
 dt = 0.01
 t = time.time()
 
 while True:
-    sim.gravity(dt)
+    #sim.gravity(dt)
     sim.walls()
     sim.incompressibility(dt, overrelax=1.0, n=50)
-    sim.advection_for(dt)
+    sim.advection(dt)
 
     # plot pressures
     p = sim.p.copy()

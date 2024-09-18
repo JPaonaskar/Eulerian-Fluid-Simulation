@@ -24,8 +24,16 @@ def sample_2D_field(field:np.ndarray, x:np.ndarray, y:np.ndarray) -> np.ndarray:
     np.ndarray
         sample
     '''
-    # compress field
     h, w = field.shape
+
+    # clamp values
+    x[x < 0.0] = 0.0
+    y[y < 0.0] = 0.0
+
+    x[x > w - 1.0] = w - 1.0
+    y[y > h - 1.0] = h - 1.0
+
+    # compress field
     field = field.flatten()
     
     # get corner indexes
@@ -33,6 +41,8 @@ def sample_2D_field(field:np.ndarray, x:np.ndarray, y:np.ndarray) -> np.ndarray:
     b = np.floor(y) * w +  np.ceil(x) # bottom right
     c =  np.ceil(y) * w + np.floor(x) # top left
     d =  np.ceil(y) * w +  np.ceil(x) # top right
+
+    #print(h, w, w*h-1, y.max(), x.max(), (y * w + x).max(), ((h-1) * w + w-1), a.max()) ### ROUNDING ISSUE FOR LARGE FLOATS!!
 
     # slice
     a = field[a.astype(int)]
